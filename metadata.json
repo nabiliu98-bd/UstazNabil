@@ -1,0 +1,6 @@
+{
+  "name": "Ustaz Nabil",
+  "description": "মাদরাসা শিক্ষার্থীদের জন্য সরাসরি উস্তাযের সাথে যোগাযোগের চ্যাট সিস্টেম",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

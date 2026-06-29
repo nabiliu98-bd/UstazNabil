@@ -1,0 +1,92 @@
+rules_version = '2';
+// Hardened security rules for Ustaz Nabil Chat App
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety net: deny all by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function isValidSystemSetting(data) {
+      return data.keys().hasAll(['adminStatus', 'password'])
+        && data.keys().size() == 2
+        && (data.adminStatus == 'ONLINE' || data.adminStatus == 'OFFLINE')
+        && data.password is string
+        && data.password.size() <= 100;
+    }
+
+    function isValidFAQ(data) {
+      return data.keys().hasAll(['question', 'answer', 'order'])
+        && data.keys().size() == 3
+        && data.question is string
+        && data.question.size() <= 500
+        && data.answer is string
+        && data.answer.size() <= 5000
+        && data.order is int;
+    }
+
+    function isValidConversation(data) {
+      return data.keys().hasAll([
+          'studentName', 'studentClass', 'studentRoll',
+          'createdAt', 'lastMessageAt', 'unreadAdminCount',
+          'unreadStudentCount', 'status', 'expiresAt'
+        ])
+        && data.keys().size() == 9
+        && data.studentName is string
+        && data.studentName.size() <= 100
+        && data.studentClass is string
+        && data.studentClass.size() <= 50
+        && data.studentRoll is string
+        && data.studentRoll.size() <= 50
+        && data.createdAt is int
+        && data.lastMessageAt is int
+        && data.unreadAdminCount is int
+        && data.unreadStudentCount is int
+        && data.status is string
+        && data.status.size() <= 50
+        && data.expiresAt is int;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['conversationId', 'sender', 'text', 'createdAt', 'seen'])
+        && data.keys().size() == 5
+        && data.conversationId is string
+        && data.conversationId.size() <= 128
+        && (data.sender == 'student' || data.sender == 'admin')
+        && data.text is string
+        && data.text.size() <= 10000
+        && data.createdAt is int
+        && data.seen is bool;
+    }
+
+    match /system_settings/{id} {
+      allow read: if true;
+      allow create, update: if isValidId(id) && isValidSystemSetting(request.resource.data);
+      allow delete: if isValidId(id);
+    }
+
+    match /faqs/{id} {
+      allow read: if true;
+      allow create, update: if isValidId(id) && isValidFAQ(request.resource.data);
+      allow delete: if isValidId(id);
+    }
+
+    match /conversations/{id} {
+      allow read: if true;
+      allow create, update: if isValidId(id) && isValidConversation(request.resource.data);
+      allow delete: if isValidId(id);
+    }
+
+    match /messages/{id} {
+      allow read: if true;
+      allow create, update: if isValidId(id) && isValidMessage(request.resource.data);
+      allow delete: if isValidId(id);
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "SystemSetting": {
+      "title": "System Setting",
+      "description": "App settings like admin status and admin panel login password",
+      "type": "object",
+      "properties": {
+        "adminStatus": {
+          "type": "string",
+          "enum": ["ONLINE", "OFFLINE"]
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": ["adminStatus", "password"]
+    },
+    "FAQ": {
+      "title": "Frequently Asked Question",
+      "description": "Notice or frequently asked question displayed to students",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "answer": { "type": "string" },
+        "order": { "type": "integer" }
+      },
+      "required": ["question", "answer", "order"]
+    },
+    "Conversation": {
+      "title": "Student Conversation",
+      "description": "An active or expired live chat session between a student and an admin",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string" },
+        "studentClass": { "type": "string" },
+        "studentRoll": { "type": "string" },
+        "createdAt": { "type": "integer" },
+        "lastMessageAt": { "type": "integer" },
+        "unreadAdminCount": { "type": "integer" },
+        "unreadStudentCount": { "type": "integer" },
+        "status": { "type": "string" },
+        "expiresAt": { "type": "integer" }
+      },
+      "required": [
+        "studentName",
+        "studentClass",
+        "studentRoll",
+        "createdAt",
+        "lastMessageAt",
+        "unreadAdminCount",
+        "unreadStudentCount",
+        "status",
+        "expiresAt"
+      ]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "A single message inside a student-admin conversation",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string" },
+        "sender": { "type": "string", "enum": ["student", "admin"] },
+        "text": { "type": "string" },
+        "createdAt": { "type": "integer" },
+        "seen": { "type": "boolean" }
+      },
+      "required": ["conversationId", "sender", "text", "createdAt", "seen"]
+    }
+  },
+  "firestore": {
+    "/system_settings/{id}": {
+      "schema": "SystemSetting",
+      "description": "Holds system state and credentials"
+    },
+    "/faqs/{id}": {
+      "schema": "FAQ",
+      "description": "Notice and FAQ entries"
+    },
+    "/conversations/{id}": {
+      "schema": "Conversation",
+      "description": "Active student support chat sessions"
+    },
+    "/messages/{id}": {
+      "schema": "Message",
+      "description": "All chat messages indexed by conversation ID"
+    }
+  }
+}
