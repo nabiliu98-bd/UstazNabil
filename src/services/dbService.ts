@@ -84,71 +84,32 @@ export async function initializeDatabase() {
       try {
         await setDoc(statusDocRef, {
           adminStatus: "ONLINE",
-          password: "1953" // Default password
+          password: "1953", // Default password
+          faqsCleared: true // For new databases, start empty
         });
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, `${SYSTEM_SETTINGS_COLL}/status`);
       }
-    }
-
-    // Seed Default FAQs if empty
-    const faqsQuery = query(collection(db, FAQS_COLL), limit(1));
-    let faqsSnap;
-    try {
-      faqsSnap = await getDocs(faqsQuery);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, FAQS_COLL);
-      return;
-    }
-
-    if (faqsSnap.empty) {
-      const defaultFAQs = [
-        {
-          question: "আগামীকালের ক্লাস",
-          answer: "আগামীকাল মাদরাসার সকল ক্লাস যথারীতি সকাল ৮:০০ টা থেকে শুরু হবে। সকল শিক্ষার্থীকে সময়মতো উপস্থিত থাকার জন্য বলা হচ্ছে।",
-          order: 1
-        },
-        {
-          question: "হোমওয়ার্ক",
-          answer: "অনুগ্রহ করে আপনার শ্রেণির উস্তাযের দেওয়া ডায়েরি বা গ্রুপ চেক করুন। সাধারণ নিয়ম অনুযায়ী আজকের পড়া আগামীকালের ক্লাসের জন্য মুখস্থ বা লিখে আনতে হবে।",
-          order: 2
-        },
-        {
-          question: "পরীক্ষার তারিখ",
-          answer: "আসন্ন সাময়িক পরীক্ষা আগামী মাসের ১৫ তারিখ থেকে শুরু হবে ইনশাআল্লাহ। বিস্তারিত সময়সূচি নোটিশ বোর্ডে দেওয়া হবে।",
-          order: 3
-        },
-        {
-          question: "পরীক্ষার সিলেবাস",
-          answer: "পরীক্ষার সিলেবাস প্রতিটি বিষয়ের প্রথম ৫টি অধ্যায়। কোনো অস্পষ্টতা থাকলে আপনার শ্রেণির উস্তাযের সাথে সরাসরি যোগাযোগ করুন।",
-          order: 4
-        },
-        {
-          question: "মাদরাসার সময়সূচি",
-          answer: "মাদরাসার দৈনন্দিন সময়সূচি: সকাল ৮:০০ টা থেকে দুপুর ১:০০ টা পর্যন্ত। নামাজের বিরতি বেলা ১২:১৫ মিনিটে।",
-          order: 5
-        },
-        {
-          question: "ভর্তি তথ্য",
-          answer: "নতুন সেশনে ভর্তি কার্যক্রম চলমান রয়েছে। মাদরাসা কার্যালয়ে এসে সরাসরি যোগাযোগ করুন অথবা ভর্তি ফরম সংগ্রহ করুন।",
-          order: 6
-        },
-        {
-          question: "যোগাযোগ",
-          answer: "মাদরাসা হেল্পলাইন: +৮৮০১৭১২-৩৪৫৬৭৮, ইমেইল: madrasa.support@email.com",
-          order: 7
+    } else {
+      // One-time deletion of existing seeded FAQs as requested by user
+      const statusData = statusSnap.data();
+      if (!statusData?.faqsCleared) {
+        try {
+          const faqsQuery = query(collection(db, FAQS_COLL));
+          const faqsSnap = await getDocs(faqsQuery);
+          if (!faqsSnap.empty) {
+            const batch = writeBatch(db);
+            faqsSnap.forEach((docSnap) => {
+              batch.delete(docSnap.ref);
+            });
+            await batch.commit();
+          }
+          await updateDoc(statusDocRef, { faqsCleared: true });
+          console.log("Successfully cleared existing FAQs as requested.");
+        } catch (error) {
+          // Soft warn if permissions are restricted (which is expected for non-admin student logins)
+          console.warn("Could not auto-clear seeded FAQs on startup (normal for student sessions):", error);
         }
-      ];
-
-      try {
-        const batch = writeBatch(db);
-        for (const faq of defaultFAQs) {
-          const newDocRef = doc(collection(db, FAQS_COLL));
-          batch.set(newDocRef, faq);
-        }
-        await batch.commit();
-      } catch (error) {
-        handleFirestoreError(error, OperationType.WRITE, FAQS_COLL);
       }
     }
   } catch (error) {
@@ -208,17 +169,20 @@ export async function updateAdminPassword(newPassword: string) {
 }
 
 // 3. FAQ Management
-export function listenToFAQs(callback: (faqs: FAQ[]) => void) {
+export function listenToFAQs(callback: (faqs: FAQ[]) => void, className?: string) {
   const faqsQuery = query(collection(db, FAQS_COLL), orderBy("order", "asc"));
   return onSnapshot(
     faqsQuery,
     (querySnapshot) => {
       const faqs: FAQ[] = [];
       querySnapshot.forEach((docSnap) => {
-        faqs.push({
-          id: docSnap.id,
-          ...docSnap.data()
-        } as FAQ);
+        const data = docSnap.data();
+        if (!className || !data.className || data.className === "ALL" || data.className === className) {
+          faqs.push({
+            id: docSnap.id,
+            ...data
+          } as FAQ);
+        }
       });
       callback(faqs);
     },
@@ -228,19 +192,19 @@ export function listenToFAQs(callback: (faqs: FAQ[]) => void) {
   );
 }
 
-export async function addFAQ(question: string, answer: string, order: number) {
+export async function addFAQ(question: string, answer: string, order: number, className: string) {
   const faqsColl = collection(db, FAQS_COLL);
   try {
-    await addDoc(faqsColl, { question, answer, order });
+    await addDoc(faqsColl, { question, answer, order, className });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, FAQS_COLL);
   }
 }
 
-export async function updateFAQ(id: string, question: string, answer: string, order: number) {
+export async function updateFAQ(id: string, question: string, answer: string, order: number, className: string) {
   const faqDocRef = doc(db, FAQS_COLL, id);
   try {
-    await updateDoc(faqDocRef, { question, answer, order });
+    await updateDoc(faqDocRef, { question, answer, order, className });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `${FAQS_COLL}/${id}`);
   }

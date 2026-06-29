@@ -31,6 +31,7 @@ export interface FAQ {
   question: string;
   answer: string;
   order: number;
+  className: string;
 }
 
 export interface SystemStatus {

@@ -15,7 +15,6 @@ service cloud.firestore {
 
     function isValidSystemSetting(data) {
       return data.keys().hasAll(['adminStatus', 'password'])
-        && data.keys().size() == 2
         && (data.adminStatus == 'ONLINE' || data.adminStatus == 'OFFLINE')
         && data.password is string
         && data.password.size() <= 100;
@@ -23,12 +22,12 @@ service cloud.firestore {
 
     function isValidFAQ(data) {
       return data.keys().hasAll(['question', 'answer', 'order'])
-        && data.keys().size() == 3
         && data.question is string
         && data.question.size() <= 500
         && data.answer is string
         && data.answer.size() <= 5000
-        && data.order is int;
+        && data.order is int
+        && (!data.keys().hasAll(['className']) || (data.className is string && data.className.size() <= 100));
     }
 
     function isValidConversation(data) {

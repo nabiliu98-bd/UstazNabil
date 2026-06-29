@@ -29,6 +29,11 @@ export default function StudentChat({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Filter FAQs specific to this student's class or general ALL classes
+  const filteredFaqs = faqs.filter(
+    (faq) => !faq.className || faq.className === "ALL" || faq.className === studentInfo.className
+  );
+
   // 1. Listen to Real-time messages for this conversation
   useEffect(() => {
     setLoading(true);
@@ -47,9 +52,9 @@ export default function StudentChat({
   useEffect(() => {
     const unsubscribe = listenToFAQs((loadedFaqs) => {
       setFaqs(loadedFaqs);
-    });
+    }, studentInfo.className);
     return () => unsubscribe();
-  }, []);
+  }, [studentInfo.className]);
 
   // 3. Scroll to bottom on new messages
   useEffect(() => {
@@ -217,27 +222,53 @@ export default function StudentChat({
       )}
 
       {/* Bottom Area: Input or Offline FAQ Drawer */}
-      <div id="chat-input-area" className="border-t border-[#E5E5E5] bg-white p-3">
+      <div id="chat-input-area" className="border-t border-[#E5E5E5] bg-white p-3.5 space-y-3">
         {adminStatus === "ONLINE" ? (
-          <form id="chat-online-form" onSubmit={handleSend} className="flex gap-2">
-            <input
-              id="chat-text-input"
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="এখানে আপনার প্রশ্ন লিখুন..."
-              disabled={sending}
-              className="flex-1 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-[#0F6B43]/20 focus:border-[#0F6B43] transition-all disabled:opacity-50"
-            />
-            <button
-              id="chat-send-btn"
-              type="submit"
-              disabled={!inputText.trim() || sending}
-              className="bg-[#0F6B43] hover:bg-[#1E8E5A] text-white p-2.5 rounded-xl transition-all disabled:opacity-40 flex items-center justify-center shadow-sm active:scale-95"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </form>
+          <div className="space-y-3">
+            {/* Class-specific FAQs suggestions above typing input */}
+            {filteredFaqs.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-gray-500 px-1">
+                  <BookOpen className="w-3.5 h-3.5 text-[#0F6B43]" />
+                  <span className="text-[11px] font-semibold font-sans">সাধারণ প্রশ্নোত্তর ({studentInfo.className}):</span>
+                </div>
+                <div id="faq-buttons-scroller-online" className="flex flex-wrap gap-1.5 max-h-[90px] overflow-y-auto py-1">
+                  {filteredFaqs.map((faq) => (
+                    <button
+                      key={faq.id}
+                      id={`faq-btn-online-${faq.id}`}
+                      onClick={() => handleFAQSelect(faq)}
+                      disabled={sending}
+                      className="bg-emerald-50/30 hover:bg-emerald-50 hover:border-emerald-200 border border-[#E5E5E5]/60 text-[11px] font-medium font-sans text-[#222222] hover:text-[#0F6B43] py-1.5 px-3 rounded-full transition-all flex items-center gap-1 shadow-2xs disabled:opacity-50 active:scale-95 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
+                      {faq.question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form id="chat-online-form" onSubmit={handleSend} className="flex gap-2 pt-1">
+              <input
+                id="chat-text-input"
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="এখানে আপনার প্রশ্ন লিখুন..."
+                disabled={sending}
+                className="flex-1 bg-[#FAFAFA] border border-[#E5E5E5] rounded-xl px-4 py-2.5 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-[#0F6B43]/20 focus:border-[#0F6B43] transition-all disabled:opacity-50"
+              />
+              <button
+                id="chat-send-btn"
+                type="submit"
+                disabled={!inputText.trim() || sending}
+                className="bg-[#0F6B43] hover:bg-[#1E8E5A] text-white p-2.5 rounded-xl transition-all disabled:opacity-40 flex items-center justify-center shadow-sm active:scale-95"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </form>
+          </div>
         ) : (
           <div id="chat-offline-faq-panel" className="space-y-3">
             {/* Offline Announcement Box */}
@@ -252,22 +283,28 @@ export default function StudentChat({
             </div>
 
             {/* Scrollable List of FAQs */}
-            <div id="faq-buttons-scroller" className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto pb-1.5">
-              {faqs.map((faq) => (
-                <button
-                  key={faq.id}
-                  id={`faq-btn-${faq.id}`}
-                  onClick={() => handleFAQSelect(faq)}
-                  disabled={sending}
-                  className="bg-[#FAFAFA] hover:bg-emerald-50 hover:border-emerald-200 border border-[#E5E5E5] text-xs font-medium font-sans text-[#222222] hover:text-[#0F6B43] py-2 px-3.5 rounded-full transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-50 active:scale-95 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  {faq.question}
-                </button>
-              ))}
-              {faqs.length === 0 && (
-                <p className="text-[11px] text-gray-400 italic font-sans p-2">কোনো সাধারণ প্রশ্নোত্তর পাওয়া যায়নি।</p>
-              )}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-gray-500 px-1">
+                <BookOpen className="w-3.5 h-3.5 text-[#0F6B43]" />
+                <span className="text-[11px] font-semibold font-sans">সাধারণ প্রশ্নোত্তর ({studentInfo.className}):</span>
+              </div>
+              <div id="faq-buttons-scroller" className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto pb-1.5">
+                {filteredFaqs.map((faq) => (
+                  <button
+                    key={faq.id}
+                    id={`faq-btn-${faq.id}`}
+                    onClick={() => handleFAQSelect(faq)}
+                    disabled={sending}
+                    className="bg-[#FAFAFA] hover:bg-emerald-50 hover:border-emerald-200 border border-[#E5E5E5] text-xs font-medium font-sans text-[#222222] hover:text-[#0F6B43] py-2 px-3.5 rounded-full transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-50 active:scale-95 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    {faq.question}
+                  </button>
+                ))}
+                {filteredFaqs.length === 0 && (
+                  <p className="text-[11px] text-gray-400 italic font-sans p-2">আপনার শ্রেণির জন্য কোনো সাধারণ প্রশ্নোত্তর পাওয়া যায়নি।</p>
+                )}
+              </div>
             </div>
           </div>
         )}

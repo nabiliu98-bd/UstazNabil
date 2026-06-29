@@ -11,6 +11,9 @@
         },
         "password": {
           "type": "string"
+        },
+        "faqsCleared": {
+          "type": "boolean"
         }
       },
       "required": ["adminStatus", "password"]
@@ -22,9 +25,10 @@
       "properties": {
         "question": { "type": "string" },
         "answer": { "type": "string" },
-        "order": { "type": "integer" }
+        "order": { "type": "integer" },
+        "className": { "type": "string" }
       },
-      "required": ["question", "answer", "order"]
+      "required": ["question", "answer", "order", "className"]
     },
     "Conversation": {
       "title": "Student Conversation",

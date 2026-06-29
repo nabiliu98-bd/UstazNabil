@@ -107,9 +107,11 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
   const [newFaqQuestion, setNewFaqQuestion] = useState("");
   const [newFaqAnswer, setNewFaqAnswer] = useState("");
   const [newFaqOrder, setNewFaqOrder] = useState<number>(1);
+  const [newFaqClassName, setNewFaqClassName] = useState("ALL");
   const [editQuestion, setEditQuestion] = useState("");
   const [editAnswer, setEditAnswer] = useState("");
   const [editOrder, setEditOrder] = useState<number>(1);
+  const [editClassName, setEditClassName] = useState("ALL");
 
   // Settings states
   const [oldPassword, setOldPassword] = useState("");
@@ -302,10 +304,11 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
     }
 
     try {
-      await addFAQ(newFaqQuestion.trim(), newFaqAnswer.trim(), Number(newFaqOrder) || 1);
+      await addFAQ(newFaqQuestion.trim(), newFaqAnswer.trim(), Number(newFaqOrder) || 1, newFaqClassName);
       setNewFaqQuestion("");
       setNewFaqAnswer("");
       setNewFaqOrder(faqs.length + 2);
+      setNewFaqClassName("ALL");
       onToast("নতুন প্রশ্ন-উত্তর যোগ করা হয়েছে!", "success");
     } catch (err) {
       onToast("যোগ করতে ব্যর্থ হয়েছে।", "error");
@@ -318,6 +321,7 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
     setEditQuestion(faq.question);
     setEditAnswer(faq.answer);
     setEditOrder(faq.order);
+    setEditClassName(faq.className || "ALL");
   };
 
   // Save FAQ Edit
@@ -328,7 +332,7 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
     }
 
     try {
-      await updateFAQ(id, editQuestion.trim(), editAnswer.trim(), Number(editOrder) || 1);
+      await updateFAQ(id, editQuestion.trim(), editAnswer.trim(), Number(editOrder) || 1, editClassName);
       setEditingFaqId(null);
       onToast("সফলভাবে আপডেট করা হয়েছে!", "success");
     } catch (err) {
@@ -463,7 +467,7 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
             {/* PIN Code Input */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-[#222222] font-sans block">
-                পিন কোড <span className="text-[#D32F2F]">*</span> (সবার পিন এক: 1953)
+                পিন কোড <span className="text-[#D32F2F]">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -858,6 +862,28 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
                         className="w-full bg-white border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[#0F6B43]"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-[#222222] font-sans block">শ্রেণি (Class)</label>
+                      <select
+                        value={newFaqClassName}
+                        onChange={(e) => setNewFaqClassName(e.target.value)}
+                        className="w-full bg-white border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[#0F6B43] cursor-pointer"
+                      >
+                        <option value="ALL">সকল শ্রেণি (All Classes)</option>
+                        <option value="চতুর্থ শ্রেণি (Class 4)">চতুর্থ শ্রেণি (Class 4)</option>
+                        <option value="পঞ্চম শ্রেণি (Class 5)">পঞ্চম শ্রেণি (Class 5)</option>
+                        <option value="ষষ্ঠ শ্রেণি (Class 6)">ষষ্ঠ শ্রেণি (Class 6)</option>
+                        <option value="সপ্তম শ্রেণি (Class 7)">সপ্তম শ্রেণি (Class 7)</option>
+                        <option value="অষ্টম শ্রেণি (Class 8)">অষ্টম শ্রেণি (Class 8)</option>
+                        <option value="নবম শ্রেণি (Class 9)">নবম শ্রেণি (Class 9)</option>
+                        <option value="দশম শ্রেণি (Class 10)">দশম শ্রেণি (Class 10)</option>
+                        <option value="আলিম প্রথম বর্ষ (Alim 1st Year)">আলিম প্রথম বর্ষ (Alim 1st Year)</option>
+                        <option value="আলিম দ্বিতীয় বর্ষ (Alim 2nd Year)">আলিম দ্বিতীয় বর্ষ (Alim 2nd Year)</option>
+                        <option value="ফাজিল প্রথম বর্ষ (Fazil 1st Year)">ফাজিল প্রথম বর্ষ (Fazil 1st Year)</option>
+                        <option value="ফাজিল দ্বিতীয় বর্ষ (Fazil 2nd Year)">ফাজিল দ্বিতীয় বর্ষ (Fazil 2nd Year)</option>
+                        <option value="ফাজিল তৃতীয় বর্ষ (Fazil 3rd Year)">ফাজিল তৃতীয় বর্ষ (Fazil 3rd Year)</option>
+                      </select>
+                    </div>
                     <button
                       type="submit"
                       className="w-full bg-[#0F6B43] hover:bg-[#1E8E5A] text-white py-2 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer"
@@ -892,14 +918,38 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
                               rows={3}
                               className="w-full bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs font-sans"
                             />
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-[#666666] font-sans">ক্রম:</span>
-                              <input
-                                type="number"
-                                value={editOrder}
-                                onChange={(e) => setEditOrder(Number(e.target.value))}
-                                className="w-20 bg-[#FAFAFA] border border-[#E5E5E5] rounded-lg px-3 py-1 text-xs font-sans"
-                              />
+                            <div className="flex flex-wrap items-center gap-4 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-[#666666] font-sans">ক্রম:</span>
+                                <input
+                                  type="number"
+                                  value={editOrder}
+                                  onChange={(e) => setEditOrder(Number(e.target.value))}
+                                  className="w-16 bg-white border border-[#E5E5E5] rounded-lg px-2 py-1 text-xs font-sans"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-[#666666] font-sans">শ্রেণি:</span>
+                                <select
+                                  value={editClassName}
+                                  onChange={(e) => setEditClassName(e.target.value)}
+                                  className="bg-white border border-[#E5E5E5] rounded-lg px-2 py-1 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-[#0F6B43] cursor-pointer"
+                                >
+                                  <option value="ALL">সকল শ্রেণি</option>
+                                  <option value="চতুর্থ শ্রেণি (Class 4)">চতুর্থ শ্রেণি (Class 4)</option>
+                                  <option value="পঞ্চম শ্রেণি (Class 5)">পঞ্চম শ্রেণি (Class 5)</option>
+                                  <option value="ষষ্ঠ শ্রেণি (Class 6)">ষষ্ঠ শ্রেণি (Class 6)</option>
+                                  <option value="সপ্তম শ্রেণি (Class 7)">সপ্তম শ্রেণি (Class 7)</option>
+                                  <option value="অষ্টম শ্রেণি (Class 8)">অষ্টম শ্রেণি (Class 8)</option>
+                                  <option value="নবম শ্রেণি (Class 9)">নবম শ্রেণি (Class 9)</option>
+                                  <option value="দশম শ্রেণি (Class 10)">দশম শ্রেণি (Class 10)</option>
+                                  <option value="আলিম প্রথম বর্ষ (Alim 1st Year)">আলিম প্রথম বর্ষ (Alim 1st Year)</option>
+                                  <option value="আলিম দ্বিতীয় বর্ষ (Alim 2nd Year)">আলিম দ্বিতীয় বর্ষ (Alim 2nd Year)</option>
+                                  <option value="ফাজিল প্রথম বর্ষ (Fazil 1st Year)">ফাজিল প্রথম বর্ষ (Fazil 1st Year)</option>
+                                  <option value="ফাজিল দ্বিতীয় বর্ষ (Fazil 2nd Year)">ফাজিল দ্বিতীয় বর্ষ (Fazil 2nd Year)</option>
+                                  <option value="ফাজিল তৃতীয় বর্ষ (Fazil 3rd Year)">ফাজিল তৃতীয় বর্ষ (Fazil 3rd Year)</option>
+                                </select>
+                              </div>
                             </div>
                             <div className="flex gap-2">
                               <button
@@ -918,11 +968,14 @@ export default function AdminPanel({ onToast, onExit }: AdminPanelProps) {
                           </div>
                         ) : (
                           <div className="flex-1 space-y-1.5 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="bg-[#0F6B43]/10 text-[#0F6B43] text-[10px] font-bold font-sans px-2 py-0.5 rounded-full">
                                 ক্রম: {toBanglaDigits(faq.order)}
                               </span>
-                              <h4 className="font-bold text-sm text-[#222222] font-sans">{faq.question}</h4>
+                              <span className="bg-amber-50 text-amber-800 text-[10px] font-bold font-sans px-2.5 py-0.5 rounded-full border border-amber-100/50">
+                                শ্রেণি: {faq.className === "ALL" || !faq.className ? "সকল শ্রেণি" : faq.className}
+                              </span>
+                              <h4 className="font-bold text-sm text-[#222222] font-sans ml-1">{faq.question}</h4>
                             </div>
                             <p className="text-xs text-[#666666] font-sans leading-relaxed">{faq.answer}</p>
                           </div>
